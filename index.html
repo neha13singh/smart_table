@@ -3,7 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Smart Table">
   <title>Smart Table Maker — no Excel needed</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,10 +18,14 @@
     <div class="logo">∑</div>
     <div>
       <h1>Smart Table Maker</h1>
-      <p>Type your data, pick a calculation, and get a ready table. No formulas, no Excel skills.</p>
+      <p>Add your items, tap a button, and your table is ready. No formulas, no Excel skills.</p>
     </div>
   </div>
   <div class="header-actions">
+    <button class="btn btn-ghost" id="btnNewTable" title="Start a fresh table">＋ New</button>
+    <button class="btn btn-primary" id="btnSaveTable" title="Save this table to open later">💾 Save</button>
+    <button class="btn btn-ghost" id="btnMyTables" title="Open a saved table">📂 My tables <span class="saved-badge" id="savedCount"></span></button>
+    <button class="btn btn-ghost" id="btnInstall" hidden>📲 Install app</button>
     <button class="btn btn-ghost" id="btnResetAll" title="Restore the sample quotation">↺ Reset</button>
     <button class="btn btn-ghost" id="btnPrintTop">🖨 Print / PDF</button>
   </div>
@@ -48,37 +57,46 @@
       </div>
     </div>
 
-    <div class="step">
-      <div class="step-head"><span class="step-no">2</span><div><h2>Details on top <span class="optional">(optional)</span></h2><p>These appear above your table.</p></div></div>
+    <details class="step collapsible">
+      <summary class="step-head with-clear"><span class="step-no">2</span><div><h2>Details on top <span class="optional">(skip if not needed)</span></h2><p>Shop name, GSTIN, customer, date…</p></div><button class="btn btn-soft btn-sm clear-details-btn" id="btnClearDetails" title="Clear all the text on top">🧽 <span class="clear-long">Clear details</span><span class="clear-short">Clear</span></button><span class="disclosure">▾</span></summary>
       <div class="field-grid" id="docFields"></div>
-    </div>
+    </details>
 
-    <div class="step">
-      <div class="step-head"><span class="step-no">3</span><div><h2>Your columns</h2><p>Choose what each column does. The calculation happens by itself.</p></div></div>
+    <details class="step collapsible">
+      <summary class="step-head"><span class="step-no">3</span><div><h2>Change the columns <span class="optional">(usually fine as it is)</span></h2><p>Only open this if you want a different calculation.</p></div><span class="disclosure">▾</span></summary>
       <div id="columnsList" class="columns-list"></div>
       <button class="btn btn-soft" id="btnAddColumn">＋ Add a column</button>
-    </div>
+    </details>
 
-    <div class="step">
-      <div class="step-head"><span class="step-no">4</span><div><h2>Total &amp; tax</h2><p>Turn on only what you need.</p></div></div>
+    <details class="step collapsible">
+      <summary class="step-head"><span class="step-no">4</span><div><h2>Total &amp; tax <span class="optional">(already set)</span></h2><p>GST 18% and round-off are ready for you.</p></div><span class="disclosure">▾</span></summary>
       <div id="totalsBox" class="totals-box"></div>
-    </div>
+    </details>
 
     <div class="step">
-      <div class="step-head"><span class="step-no">5</span><div><h2>Enter your data</h2><p>Type in the boxes. Blue cells are calculated for you.</p></div></div>
-      <div class="entry-tools">
-        <button class="btn btn-primary btn-sm" id="btnAddRow">＋ Add row</button>
-        <button class="btn btn-soft btn-sm" id="btnSampleRows">Load sample data</button>
-        <button class="btn btn-soft btn-sm" id="btnClearRows">Clear rows</button>
+      <div class="step-head"><span class="step-no">5</span><div><h2>Add your items</h2><p>Type an item and its numbers, then tap Add. The table builds itself.</p></div></div>
+      <div class="quick-entry">
+        <div class="quick-entry-head"><strong>Quick add</strong><span>No need to touch a grid.</span></div>
+        <div class="quick-fields" id="quickFields"></div>
+        <button class="btn btn-primary quick-add-btn" id="btnQuickAdd">＋ Add this item</button>
+        <p class="quick-tip">💡 Your total on the right (or pinned above on a phone) updates straight away.</p>
       </div>
-      <div class="entry-wrap"><table class="entry-table" id="entryTable"></table></div>
+      <details class="grid-toggle" id="gridToggle">
+        <summary>✎ See and edit all rows in a table <span class="row-count" id="rowCount"></span><span class="disclosure">▾</span></summary>
+        <div class="entry-tools">
+          <button class="btn btn-primary btn-sm" id="btnAddRow">＋ Add row</button>
+          <button class="btn btn-soft btn-sm" id="btnSampleRows">Load sample data</button>
+          <button class="btn btn-soft btn-sm" id="btnClearRows">Clear rows</button>
+        </div>
+        <div class="entry-wrap"><table class="entry-table" id="entryTable"></table></div>
+      </details>
     </div>
 
-    <div class="step">
-      <div class="step-head"><span class="step-no">6</span><div><h2>Number style</h2><p>How your amounts should look.</p></div></div>
+    <details class="step collapsible">
+      <summary class="step-head"><span class="step-no">6</span><div><h2>Number style <span class="optional">(optional)</span></h2><p>Decimals, ₹ symbol, Indian commas.</p></div><span class="disclosure">▾</span></summary>
       <div class="field-grid" id="formatFields"></div>
-      <button class="btn btn-primary see-table-btn mobile-only" id="btnSeeTable">👀 See my table</button>
-    </div>
+    </details>
+    <button class="btn btn-primary see-table-btn mobile-only" id="btnSeeTable">👀 See my table</button>
 
   </section>
 
@@ -94,6 +112,7 @@
     </div>
 
     <div class="toolbar">
+      <button class="btn btn-primary btn-sm" id="btnSavePreview" title="Keep this table to open later">💾 Save this table</button>
       <div class="toolbar-group">
         <span class="toolbar-label">Copy</span>
         <button class="btn btn-soft btn-sm" id="btnCopyWord">📄 For Word / Docs</button>
@@ -117,6 +136,21 @@
   </section>
 
 </main>
+
+<div class="modal" id="savedModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="savedModalTitle">
+    <div class="modal-head">
+      <h2 id="savedModalTitle">My saved tables</h2>
+      <button class="btn-icon" id="btnCloseSaved" aria-label="Close">✕</button>
+    </div>
+    <div class="saved-list" id="savedList"></div>
+    <div class="modal-foot">
+      <button class="btn btn-soft btn-sm" id="btnClearOldSaved">🧹 Clear oldest 10</button>
+      <button class="btn btn-soft btn-sm" id="btnClearAllSaved">🗑 Clear all</button>
+    </div>
+    <p class="modal-hint">Saved in this browser only. If storage gets full, the oldest 10 tables are cleared automatically when you save. Download a file for a permanent copy.</p>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js"></script>

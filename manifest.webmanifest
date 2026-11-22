@@ -1,0 +1,19 @@
+{
+  "name": "Smart Table Maker",
+  "short_name": "Smart Table",
+  "description": "Add items, choose a calculation, and copy or download a ready table — no Excel needed.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f6fb",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

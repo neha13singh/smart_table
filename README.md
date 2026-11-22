@@ -26,7 +26,16 @@ The sample is an exact structural match of `MG_Quotation_3MLD_Electrical.docx`: 
 
 Your work is saved automatically in the browser, so a refresh will not erase it.
 
-**On a phone**, the page shows two tabs — **Edit data** and **See table** — so you are not endlessly scrolling between the form and the result. The final total stays pinned at the top in both tabs, buttons are finger-sized, and wide tables scroll sideways inside their own box. Use **👀 See my table** at the bottom of the form to jump to the result, and **✏️ Back to editing** to return.
+## Made for everyday use
+
+- **Quick add:** at the top of step 5 you get just two or three plain boxes (item, qty, rate). Type and tap **Add this item** — you never have to touch a spreadsheet-style grid. The grid is still there under “See and edit all rows in a table” when you need it.
+- **Less to read:** the setup sections (shop details, columns, GST, number style) are folded away. Open one only when you need to change it. The normal flow is just *pick a format → add items → copy/download*.
+- **No header needed?** Tap **🧽 Clear details** right beside step 2 — it empties GSTIN, company, date, etc. without touching your items or totals.
+- **My tables:** tap **💾 Save** to keep a named copy, then **📂 My tables** to open, rename, duplicate or delete it. You can keep several quotations in the browser at once. **＋ New** starts a fresh one. If the browser ever runs out of room, saving automatically removes the **oldest 10** saved tables and tells you how many were removed. You can also use **🧹 Clear oldest 10** or **🗑 Clear all** inside My tables at any time.
+- **Installable app:** on Chrome/Edge you'll see an **📲 Install app** button; on an iPhone use Safari's *Share → Add to Home Screen*. It then opens full-screen like an app and works offline.
+- **On a phone**, the page shows two tabs — **Edit data** and **See table** — so you are not endlessly scrolling between the form and the result. The final total stays pinned at the top in both tabs, buttons are finger-sized, and wide tables scroll sideways inside their own box. Use **👀 See my table** at the bottom of the form to jump to the result, and **✏️ Back to editing** to return.
+
+Saved tables live in this browser only (they are not uploaded anywhere). Download a file if you want a permanent copy or want to send it to someone.
 
 ## Copy / download options
 
@@ -46,5 +55,6 @@ Your work is saved automatically in the browser, so a refresh will not erase it.
 - `index.html` — page structure
 - `styles.css` — appearance and print layout
 - `app.js` — calculations, table generation, copy/download logic
+- `icon.svg`, `manifest.webmanifest`, `sw.js` — installable/offline app support
 
 Everything runs locally in the browser. No server or build step is required.

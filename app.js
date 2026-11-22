@@ -9,6 +9,7 @@ const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const clone = o => JSON.parse(JSON.stringify(o));
 const STORE = 'smartTableMaker.v1';
+const SAVED_KEY = 'smartTableMaker.saved.v1';
 
 function uid() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function esc(v) {
@@ -267,6 +268,24 @@ function renderTemplates() {
   $$('.template-card').forEach(b =>
     b.classList.toggle('active', b.dataset.template === currentTemplate));
 }
+/* the three boxes shown above the data grid — no technical words */
+function quickColumns() {
+  const cols = state.columns.filter(c => c.kind === 'text' || c.kind === 'number');
+  const out = [];
+  const text = cols.find(c => c.kind === 'text');
+  if (text) out.push(text);
+  cols.filter(c => c.kind === 'number').slice(0, 2).forEach(c => out.push(c));
+  if (!out.length) cols.slice(0, 3).forEach(c => out.push(c));
+  return out.slice(0, 3);
+}
+function renderQuickFields() {
+  const cols = quickColumns();
+  $('#quickFields').innerHTML = cols.length ? cols.map(c => `
+    <div><label>${esc(c.name)}</label>
+      <input data-qcol="${esc(c.id)}" inputmode="${c.kind === 'number' ? 'decimal' : 'text'}"
+             placeholder="${c.kind === 'number' ? '0' : 'Type here…'}" autocomplete="off">
+    </div>`).join('') : '<p class="col-note">Add a column in step 3 first.</p>';
+}
 function renderDocFields() {
   $('#docFields').innerHTML = DOC_FIELDS.map(f => `
     <div class="${f.wide ? 'wide' : ''}">
@@ -361,6 +380,8 @@ function renderEntry() {
   }).join('');
   table.innerHTML = head + '<tbody>' + (body ||
     `<tr><td colspan="${n + 1}" style="padding:18px;text-align:center;color:#8b95a7">No rows yet — click “Add row”.</td></tr>`) + '</tbody>';
+  const count = $('#rowCount');
+  if (count) count.textContent = state.rows.length + (state.rows.length === 1 ? ' row' : ' rows');
 }
 function refreshCalcCells() {
   $$('#entryTable .calc-cell').forEach(el => {
@@ -543,13 +564,110 @@ async function copyRichTable() {
 }
 
 /* =========================================================
+   SAVED TABLES (like a little app library)
+   ========================================================= */
+
+const OLD_BATCH = 10;
+let lastAutoClear = 0;
+
+function loadSaved() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
+function isQuotaError(e) {
+  return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+}
+function savedNotice(fallback) {
+  const msg = lastAutoClear
+    ? 'Browser was full — removed ' + lastAutoClear + ' oldest saved table' + (lastAutoClear === 1 ? '' : 's') + '. ' + fallback
+    : fallback;
+  lastAutoClear = 0;
+  return msg;
+}
+function pruneForSaving(list, count, keepId) {
+  const candidates = list.map((item, i) => ({ item, i })).filter(x => x.item && x.item.id !== keepId);
+  candidates.sort((a, b) => (a.item.savedAt || 0) - (b.item.savedAt || 0));
+  const drop = new Set(candidates.slice(0, count).map(x => x.i));
+  return list.filter((_, i) => !drop.has(i));
+}
+function clearOldestSaved(count) {
+  const list = loadSaved();
+  if (!list.length) return 0;
+  const kept = pruneForSaving(list, count, null);
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(kept)); return list.length - kept.length; }
+  catch (e) { return 0; }
+}
+function writeSaved(list, keepId) {
+  lastAutoClear = 0;
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); return true; }
+  catch (e) {
+    if (!isQuotaError(e)) { toast('Could not save in this browser'); return false; }
+    let working = list.slice();
+    let removed = 0;
+    for (let round = 0; round < 100; round++) {
+      const before = working.length;
+      working = pruneForSaving(working, OLD_BATCH, keepId);
+      const n = before - working.length;
+      if (!n) break;
+      removed += n;
+      try {
+        localStorage.setItem(SAVED_KEY, JSON.stringify(working));
+        lastAutoClear = removed;
+        return true;
+      } catch (e2) {
+        if (!isQuotaError(e2)) { toast('Could not save in this browser'); return false; }
+      }
+    }
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(working)); } catch (e3) { /* nothing else we can do */ }
+    toast('Browser storage is full — clear old tables in “My tables” or download a file');
+    return false;
+  }
+}
+function updateSavedCount() {
+  const el = $('#savedCount');
+  if (el) { const n = loadSaved().length; el.textContent = n ? String(n) : ''; }
+}
+function saveCurrentTable() {
+  const suggested = String(state.doc.title || state.doc.company || 'My table').trim() || 'My table';
+  const name = prompt('Name this table:', suggested);
+  if (name === null) return;
+  const list = loadSaved();
+  const entry = { id: uid(), name: name.trim() || suggested, state: clone(state), savedAt: Date.now() };
+  list.unshift(entry);
+  if (writeSaved(list, entry.id)) {
+    updateSavedCount();
+    toast(savedNotice('Saved in this browser — open “My tables” to find it'));
+  }
+}
+function renderSavedList() {
+  const list = loadSaved();
+  updateSavedCount();
+  $('#savedList').innerHTML = list.length ? list.map(item => {
+    const date = new Date(item.savedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    return `<div class="saved-item" data-id="${esc(item.id)}">
+      <div class="saved-info"><strong>${esc(item.name)}</strong><small>${esc(date)}</small></div>
+      <div class="saved-actions">
+        <button class="btn btn-soft btn-sm" data-saved="open">Open</button>
+        <button class="btn-icon" data-saved="rename" title="Rename">✎</button>
+        <button class="btn-icon" data-saved="duplicate" title="Duplicate">⧉</button>
+        <button class="btn-icon" data-saved="delete" title="Delete">🗑</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="saved-empty">Nothing saved yet. Tap 💾 Save to keep this table.</div>';
+}
+function openSavedModal() { renderSavedList(); $('#savedModal').hidden = false; }
+function closeSavedModal() { $('#savedModal').hidden = true; }
+
+/* =========================================================
    STATE CHANGES
    ========================================================= */
 
 function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* private mode */ } }
 function refresh(opts) {
   const o = opts || {};
-  if (o.columns) renderColumns();
+  if (o.columns) { renderColumns(); renderQuickFields(); }
   if (o.totals) renderTotals();
   if (o.entry) renderEntry();
   refreshCalcCells();
@@ -581,7 +699,7 @@ function applyTemplate(key) {
   toast('Format loaded: ' + ({ quotation: 'Quotation / Bill', simple: 'Simple list', blank: 'Blank table' })[key]);
 }
 function renderAll() {
-  renderTemplates(); renderDocFields(); renderFormatFields();
+  renderTemplates(); renderDocFields(); renderFormatFields(); renderQuickFields();
   renderColumns(); renderTotals(); renderEntry(); renderPreview();
   save();
 }
@@ -603,6 +721,94 @@ function bindEvents() {
   $('#btnSeeTable').addEventListener('click', () => setView('preview'));
   $('#btnBackEdit').addEventListener('click', () => setView('edit'));
 
+  $('#btnQuickAdd').addEventListener('click', () => {
+    const inputs = $$('#quickFields input');
+    if (!inputs.length) { toast('Add a column in step 3 first'); return; }
+    const row = blankRow();
+    let filled = false;
+    inputs.forEach(input => {
+      const v = input.value.trim();
+      if (v) filled = true;
+      row[input.dataset.qcol] = v;
+    });
+    if (!filled) { toast('Type something first'); inputs[0].focus(); return; }
+    state.rows.push(row);
+    inputs.forEach(input => { input.value = ''; });
+    refresh({ entry: true });
+    toast('Added to your table');
+  });
+
+  $('#btnNewTable').addEventListener('click', () => { applyTemplate('blank'); setView('edit'); });
+  $('#btnSaveTable').addEventListener('click', saveCurrentTable);
+  $('#btnSavePreview').addEventListener('click', saveCurrentTable);
+  $('#btnMyTables').addEventListener('click', openSavedModal);
+  $('#btnCloseSaved').addEventListener('click', closeSavedModal);
+  $('#savedModal').addEventListener('click', e => { if (e.target.id === 'savedModal') closeSavedModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('#savedModal').hidden) closeSavedModal();
+  });
+
+  $('#savedList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-saved]');
+    if (!btn) return;
+    const id = btn.closest('.saved-item').dataset.id;
+    const list = loadSaved();
+    const idx = list.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const act = btn.dataset.saved;
+    if (act === 'open') {
+      state = clone(list[idx].state);
+      currentTemplate = state.template || 'quotation';
+      normalize(); renderAll();
+      closeSavedModal(); setView('edit');
+      toast('Opened: ' + list[idx].name);
+    } else if (act === 'rename') {
+      const name = prompt('New name:', list[idx].name);
+      if (name === null) return;
+      list[idx].name = name.trim() || list[idx].name;
+      writeSaved(list, list[idx].id); renderSavedList(); toast(savedNotice('Renamed'));
+    } else if (act === 'duplicate') {
+      const copy = { id: uid(), name: list[idx].name + ' copy', state: clone(list[idx].state), savedAt: Date.now() };
+      list.unshift(copy);
+      writeSaved(list, copy.id); renderSavedList(); toast(savedNotice('Duplicated'));
+    } else if (act === 'delete') {
+      if (!confirm('Delete this saved table?')) return;
+      list.splice(idx, 1);
+      writeSaved(list); renderSavedList(); toast('Deleted');
+    }
+  });
+
+  $('#btnClearOldSaved').addEventListener('click', () => {
+    const list = loadSaved();
+    if (!list.length) { toast('No saved tables to clear'); return; }
+    const n = Math.min(OLD_BATCH, list.length);
+    if (!confirm('Delete the ' + n + ' oldest saved table' + (n === 1 ? '' : 's') + '?')) return;
+    const removed = clearOldestSaved(OLD_BATCH);
+    renderSavedList();
+    toast(removed ? 'Removed ' + removed + ' old saved table' + (removed === 1 ? '' : 's') : 'Could not clear saved tables');
+  });
+  $('#btnClearAllSaved').addEventListener('click', () => {
+    if (!loadSaved().length) { toast('No saved tables to clear'); return; }
+    if (!confirm('Delete ALL saved tables? This cannot be undone.')) return;
+    try {
+      localStorage.removeItem(SAVED_KEY);
+      renderSavedList(); toast('All saved tables removed');
+    } catch (e) { toast('Could not clear saved tables'); }
+  });
+
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); installPrompt = e;
+    $('#btnInstall').hidden = false;
+  });
+  $('#btnInstall').addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    $('#btnInstall').hidden = true;
+  });
+
   $('#templateGrid').addEventListener('click', e => {
     const card = e.target.closest('.template-card');
     if (card) applyTemplate(card.dataset.template);
@@ -613,6 +819,16 @@ function bindEvents() {
     if (!key) return;
     state.doc[key] = e.target.value;
     renderPreview(); save();
+  });
+
+  $('#btnClearDetails').addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const hasText = DOC_FIELDS.some(f => String(state.doc[f.key] || '').trim());
+    if (hasText && !confirm('Clear all the details on top? Your items and totals will stay.')) return;
+    DOC_FIELDS.forEach(f => { state.doc[f.key] = ''; });
+    renderDocFields(); renderPreview(); save();
+    toast('Top details cleared — your table stays');
   });
 
   $('#formatFields').addEventListener('input', e => {
@@ -776,4 +992,9 @@ function bindEvents() {
   normalize();
   renderAll();
   bindEvents();
+  updateSavedCount();
+
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* offline support is optional */ });
+  }
 })();

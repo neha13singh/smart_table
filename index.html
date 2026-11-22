@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Table Maker — no Excel needed</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo">∑</div>
+    <div>
+      <h1>Smart Table Maker</h1>
+      <p>Type your data, pick a calculation, and get a ready table. No formulas, no Excel skills.</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" id="btnResetAll" title="Restore the sample quotation">↺ Reset</button>
+    <button class="btn btn-ghost" id="btnPrintTop">🖨 Print / PDF</button>
+  </div>
+</header>
+
+<nav class="mobile-tabs" id="mobileTabs" aria-label="Switch view">
+  <button class="mobile-tab active" data-view="edit">✏️ Edit data</button>
+  <button class="mobile-tab" data-view="preview">👀 See table</button>
+  <div class="mobile-total" id="mobileTotal"><span>Final total</span><strong>0.00</strong></div>
+</nav>
+
+<main class="layout" id="layout" data-view="edit">
+
+  <!-- ============ LEFT: CONTROLS ============ -->
+  <section class="panel controls" aria-label="Table builder">
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">1</span><div><h2>Start with a ready format</h2><p>Pick the one closest to what you need.</p></div></div>
+      <div class="template-grid" id="templateGrid">
+        <button class="template-card" data-template="quotation">
+          <span class="t-ico">🧾</span><strong>Quotation / Bill</strong><small>Qty × Rate = Amount, with GST &amp; total</small>
+        </button>
+        <button class="template-card" data-template="simple">
+          <span class="t-ico">📋</span><strong>Simple list</strong><small>Just values and a grand total</small>
+        </button>
+        <button class="template-card" data-template="blank">
+          <span class="t-ico">✏️</span><strong>Blank table</strong><small>Make your own columns</small>
+        </button>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">2</span><div><h2>Details on top <span class="optional">(optional)</span></h2><p>These appear above your table.</p></div></div>
+      <div class="field-grid" id="docFields"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">3</span><div><h2>Your columns</h2><p>Choose what each column does. The calculation happens by itself.</p></div></div>
+      <div id="columnsList" class="columns-list"></div>
+      <button class="btn btn-soft" id="btnAddColumn">＋ Add a column</button>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">4</span><div><h2>Total &amp; tax</h2><p>Turn on only what you need.</p></div></div>
+      <div id="totalsBox" class="totals-box"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">5</span><div><h2>Enter your data</h2><p>Type in the boxes. Blue cells are calculated for you.</p></div></div>
+      <div class="entry-tools">
+        <button class="btn btn-primary btn-sm" id="btnAddRow">＋ Add row</button>
+        <button class="btn btn-soft btn-sm" id="btnSampleRows">Load sample data</button>
+        <button class="btn btn-soft btn-sm" id="btnClearRows">Clear rows</button>
+      </div>
+      <div class="entry-wrap"><table class="entry-table" id="entryTable"></table></div>
+    </div>
+
+    <div class="step">
+      <div class="step-head"><span class="step-no">6</span><div><h2>Number style</h2><p>How your amounts should look.</p></div></div>
+      <div class="field-grid" id="formatFields"></div>
+      <button class="btn btn-primary see-table-btn mobile-only" id="btnSeeTable">👀 See my table</button>
+    </div>
+
+  </section>
+
+  <!-- ============ RIGHT: PREVIEW ============ -->
+  <section class="panel preview-pane" aria-label="Generated table">
+    <div class="preview-head">
+      <div>
+        <h2>Your table <span class="live-dot">● live</span></h2>
+        <p>Changes show up here instantly.</p>
+      </div>
+      <div class="big-total" id="bigTotal">Total: ₹0.00</div>
+      <button class="btn btn-soft back-edit-btn mobile-only" id="btnBackEdit">✏️ Back to editing</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <span class="toolbar-label">Copy</span>
+        <button class="btn btn-soft btn-sm" id="btnCopyWord">📄 For Word / Docs</button>
+        <button class="btn btn-soft btn-sm" id="btnCopyExcel">📊 For Excel</button>
+        <button class="btn btn-soft btn-sm" id="btnCopyMd"># Markdown</button>
+      </div>
+      <div class="toolbar-group">
+        <span class="toolbar-label">Download</span>
+        <button class="btn btn-primary btn-sm" id="btnDlExcel">Excel</button>
+        <button class="btn btn-soft btn-sm" id="btnDlWord">Word</button>
+        <button class="btn btn-soft btn-sm" id="btnDlCsv">CSV</button>
+        <button class="btn btn-soft btn-sm" id="btnDlHtml">HTML</button>
+        <button class="btn btn-soft btn-sm" id="btnPrint">PDF</button>
+      </div>
+    </div>
+
+    <p class="swipe-hint mobile-only">↔ Swipe the table sideways to see every column.</p>
+    <div class="sheet-scroll"><div class="sheet" id="sheet"></div></div>
+
+    <p class="hint">💡 Tip: “For Word / Docs” keeps the borders and colours when you paste. “For Excel” pastes into separate cells.</p>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

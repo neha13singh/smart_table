@@ -1,5 +1,5 @@
 /* Smart Table Maker — offline app shell */
-const CACHE = 'smart-table-v7';
+const CACHE = 'smart-table-v9';
 const FILES = [
   './',
   './index.html',

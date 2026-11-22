@@ -271,7 +271,7 @@ details[open] > summary .disclosure{transform:rotate(180deg)}
   .preview-pane{position:static}
 }
 
-@media(max-width:760px){
+@media(max-width:900px){
   html{-webkit-text-size-adjust:100%}
   body{font-size:16px}
 
@@ -387,6 +387,10 @@ details[open] > summary .disclosure{transform:rotate(180deg)}
   .hint{font-size:12px}
 
   .toast{left:12px;right:12px;bottom:12px;text-align:center;font-size:13px}
+}
+
+@media(min-width:481px) and (max-width:900px){
+  #quickFields{grid-template-columns:repeat(3,1fr)}
 }
 
 @media(max-width:380px){
